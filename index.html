@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Idéia do Dr. Niger</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: black;
+            font-family: Arial, sans-serif;
+            color: #8B4513; /* marrom */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        #page {
+            width: 100%;
+            max-width: 800px; /* Define uma largura máxima para a página */
+            margin: 0 5%; /* Margem de 5% em cada lateral */
+        }
+
+        #map {
+            height: 80vh; /* 80% da altura da tela do usuário */
+        }
+
+        #popup-form {
+            text-align: center;
+        }
+
+        #popup-form input {
+            margin-bottom: 10px;
+        }
+
+        #save-button {
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+        }
+
+        #center-map-button {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            cursor: pointer;
+            background-color: #3498db;
+            color: white;
+            padding: 5px;
+            border: none;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="page">
+        <h1>Idéia do Dr. Niger</h1>
+        
+        <div id="map"></div>
+
+        <button id="center-map-button" onclick="centerMapOnUser()">Centralizar no Usuário</button>
+    </div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <script>
+        var map;
+        var userMarker;
+        var popupForm;
+
+        function initMap() {
+            map = L.map('map');
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    var userCoordinates = [position.coords.latitude, position.coords.longitude];
+                    map.setView(userCoordinates, 16);
+
+                    userMarker = L.marker(userCoordinates).addTo(map)
+                        .bindPopup(createPopupForm())
+                        .openPopup();
+                }, function() {
+                    alert('Não foi possível obter a sua localização. Certifique-se de permitir o acesso à geolocalização.');
+                    map.setView([51.505, -0.09], 16);
+                });
+            } else {
+                alert('Seu navegador não suporta geolocalização. Atualize seu navegador para uma versão mais recente.');
+                map.setView([51.505, -0.09], 16);
+            }
+
+            map.on('click', function(event) {
+                openPopup(event.latlng);
+            });
+        }
+
+        function createPopupForm() {
+            popupForm = L.DomUtil.create('div', 'popup-form');
+            popupForm.innerHTML = `
+                <div>
+                    <label for="name">Nome do Estabelecimento:</label><br>
+                    <input type="text" id="name" name="name"><br>
+                    <label for="description">Descrição:</label><br>
+                    <input type="text" id="description" name="description"><br><br>
+                    <button id="save-button" onclick="saveMarker()">Salvar</button>
+                </div>
+            `;
+
+            return popupForm;
+        }
+
+        function openPopup(latlng) {
+            map.setView(latlng, 16);
+
+            if (userMarker) {
+                userMarker.setLatLng(latlng);
+                userMarker.getPopup().setContent(createPopupForm());
+                userMarker.openPopup();
+            } else {
+                userMarker = L.marker(latlng).addTo(map)
+                    .bindPopup(createPopupForm())
+                    .openPopup();
+            }
+        }
+
+        function saveMarker() {
+            var name = document.getElementById('name').value;
+            var description = document.getElementById('description').value;
+
+            // Transformar os inputs em parágrafos
+            var nameParagraph = document.createElement('p');
+            nameParagraph.innerHTML = `<strong>Nome:</strong> ${name}`;
+
+            var descriptionParagraph = document.createElement('p');
+            descriptionParagraph.innerHTML = `<strong>Descrição:</strong> ${description}`;
+
+            // Adicionar os parágrafos ao popup
+            var popupContent = userMarker.getPopup().getContent();
+            popupContent.appendChild(nameParagraph);
+            popupContent.appendChild(descriptionParagraph);
+
+            // Remover o botão
+            var saveButton = document.getElementById('save-button');
+            saveButton.parentNode.removeChild(saveButton);
+        }
+
+        function centerMapOnUser() {
+            if (userMarker) {
+                map.setView(userMarker.getLatLng(), 16);
+            }
+        }
+
+        window.onload = initMap;
+    </script>
+</body>
+</html>
